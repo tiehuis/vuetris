@@ -1,0 +1,27 @@
+{
+  "name": "vuetris",
+  "version": "1.0.0",
+  "description": "Tetris",
+  "main": "src/index.ts",
+  "author": "Marc Tiehuis",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.7",
+    "node-sass": "^4.7.2",
+    "pug": "^2.0.0-rc.4",
+    "sass-loader": "^6.0.6",
+    "ts-loader": "^3.1.1",
+    "typescript": "^2.6.1",
+    "vue-loader": "^13.5.0",
+    "vue-template-compiler": "2.2.1",
+    "webpack": "^3.8.1"
+  },
+  "dependencies": {
+    "keydrown": "^1.2.3",
+    "vue": "https://github.com/DanielRosenwasser/vue#540a38fb21adb7a7bc394c65e23e6cffb36cd867"
+  }
+}
