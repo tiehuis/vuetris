@@ -1,11 +1,16 @@
 var path = require('path')
 var webpack = require('webpack')
 
+var OfflinePlugin = require('offline-plugin')
+var HtmlWebPackPlugin = require('html-webpack-plugin')
+
+PUBLIC_PATH = './dist/'
+
 module.exports = {
-  entry: './src/index.ts',
+  entry: path.resolve(__dirname, 'src/index.ts'),
   output: {
     path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
+    publicPath: PUBLIC_PATH,
     filename: 'build.js'
   },
   module: {
@@ -54,6 +59,11 @@ module.exports = {
   performance: {
     hints: false
   },
+  plugins: [
+    new OfflinePlugin({
+      external: ['./index.html']
+    })
+  ],
   devtool: '#eval-source-map'
 }
 
@@ -70,6 +80,9 @@ if (process.env.NODE_ENV === 'production') {
       sourceMap: true,
       compress: {
         warnings: false
+      },
+      output: {
+        comments: false
       }
     }),
     new webpack.LoaderOptionsPlugin({

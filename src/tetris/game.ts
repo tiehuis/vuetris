@@ -1,8 +1,9 @@
 import * as kd from "keydrown"
 
-import { Pieces, PieceMap, PieceColors } from "./types"
+import { Pieces, PieceMap, PieceColors, PieceOffsets } from "./types"
 import { Randomizer, BagRandomizer } from "./randomizer"
 import { Rotater, SimpleRotater } from "./rotater"
+import { Input, InputState } from "./input"
 
 function timestamp() {
   if (window.performance && window.performance.now) {
@@ -11,53 +12,6 @@ function timestamp() {
     return new Date().getTime()
   }
 }
-
-// SRS based piece offsets
-const offsets: { [s: string]: number[][][] } = {
-  'I': [
-    [[0, 1], [1, 1], [2, 1], [3, 1]],
-    [[2, 0], [2, 1], [2, 2], [2, 3]],
-    [[0, 2], [1, 2], [2, 2], [3, 2]],
-    [[1, 0], [1, 1], [1, 2], [1, 3]],
-  ],
-  'J': [
-    [[0, 0], [0, 1], [1, 1], [2, 1]],
-    [[1, 0], [1, 1], [1, 2], [2, 0]],
-    [[0, 1], [1, 1], [2, 1], [2, 2]],
-    [[0, 2], [1, 0], [1, 1], [1, 2]],
-  ],
-  'L': [
-    [[0, 1], [1, 1], [2, 0], [2, 1]],
-    [[1, 0], [1, 1], [1, 2], [2, 2]],
-    [[0, 1], [0, 2], [1, 1], [2, 1]],
-    [[0, 0], [1, 0], [1, 1], [1, 2]],
-  ],
-  'O': [
-    [[1, 0], [1, 1], [2, 0], [2, 1]],
-    [[1, 0], [1, 1], [2, 0], [2, 1]],
-    [[1, 0], [1, 1], [2, 0], [2, 1]],
-    [[1, 0], [1, 1], [2, 0], [2, 1]],
-  ],
-  'S': [
-    [[0, 1], [1, 0], [1, 1], [2, 0]],
-    [[1, 0], [1, 1], [2, 1], [2, 2]],
-    [[0, 2], [1, 1], [1, 2], [2, 1]],
-    [[0, 0], [0, 1], [1, 1], [1, 2]],
-  ],
-  'T': [
-    [[0, 1], [1, 0], [1, 1], [2, 1]],
-    [[1, 0], [1, 1], [1, 2], [2, 1]],
-    [[0, 1], [1, 1], [1, 2], [2, 1]],
-    [[0, 1], [1, 0], [1, 1], [1, 2]],
-  ],
-  'Z': [
-    [[0, 0], [1, 0], [1, 1], [2, 1]],
-    [[1, 1], [1, 2], [2, 0], [2, 1]],
-    [[0, 1], [1, 1], [1, 2], [2, 2]],
-    [[0, 1], [0, 2], [1, 0], [1, 1]],
-  ]
-}
-
 
 const enum GameState {
   Ready,
@@ -82,6 +36,14 @@ export class Configuration {
   // Have multiple sub-objects for the different setting types.
 }
 
+export class Statistics {
+  placed: number
+
+  constructor() {
+    this.placed = 0
+  }
+}
+
 type RenderingContext = CanvasRenderingContext2D | WebGLRenderingContext
 
 export class Game {
@@ -91,8 +53,10 @@ export class Game {
   frameStep: number
 
   // Draw state
+  canvasName: string
   canvas: RenderingContext
   canvasA: HTMLCanvasElement
+  previewCanvasName: string
   previewCanvas: CanvasRenderingContext2D | WebGLRenderingContext
   previewCanvasA: HTMLCanvasElement
 
@@ -103,14 +67,30 @@ export class Game {
   randomizer: Randomizer
   previewQueue: string[]
 
+  state: GameState
+
   rotater: Rotater
   piece: string
+  pieceR: number
+
+  // NOTE: All x, y values are integers since they are commonly used for indexing
+  // specific board members. However, pieces have an implied fractional portion
+  // at all times. This is the main value used during movement calculation.
   pieceX: number
   pieceY: number
-  pieceR: number
+  pieceFloatX: number
+  pieceFloatY: number
 
   // Configuration
   cfg: Configuration
+
+  // Output statistics
+  stats: Statistics
+
+  ticks: number
+
+  // Input state
+  input: InputState
 
   // Input state
   downDebounce: boolean
@@ -118,13 +98,7 @@ export class Game {
   leftRotateDebounce: boolean
   rightRotateDebounce: boolean
 
-  constructor(canvasId: string, previewCanvasId: string, cfg: Configuration = new Configuration()) {
-    this.canvasA = document.getElementById(canvasId) as HTMLCanvasElement
-    this.canvas = this.canvasA.getContext("2d") as RenderingContext
-
-    this.previewCanvasA = document.getElementById(previewCanvasId) as HTMLCanvasElement
-    this.previewCanvas = this.previewCanvasA.getContext("2d") as RenderingContext
-
+  constructor(cfg: Configuration = new Configuration()) {
     // 2d initialize array
     this.board = new Array(20);
     for (var y = 0; y < 20; ++y) {
@@ -142,23 +116,54 @@ export class Game {
     this.pieceY = 0
     this.pieceR = 0
 
+    this.state = GameState.Ready
+
     if (cfg) {
       this.cfg = cfg;
     } else {
       this.cfg = new Configuration()
     }
 
+    this.stats = new Statistics()
+
     this.leftRotateDebounce = false
     this.rightRotateDebounce = false
     this.downDebounce = false
     this.dasCounter = 0
+
+    this.ticks = 0
 
     for (let x = 0; x < this.cfg.previewCount; ++x) {
       this.previewQueue.push(this.randomizer.next())
     }
   }
 
-  render2d(ctx: CanvasRenderingContext2D, ctxPreview: CanvasRenderingContext2D) {
+  public attachCanvas(canvasId: string, previewCanvasId: string) {
+    this.canvasName = canvasId
+    this.previewCanvasName = previewCanvasId
+
+    this.canvasA = document.getElementById(canvasId) as HTMLCanvasElement
+    // We explicitly set this as the canvas is not set correctly on initialization
+    // for some reason and we need a pretty specific sizing in order to avoid
+    // blurry output for blocks.
+    this.canvasA.width = 200
+    this.canvasA.height = 400
+    this.canvas = this.canvasA.getContext("2d") as RenderingContext
+
+    this.previewCanvasA = document.getElementById(previewCanvasId) as HTMLCanvasElement
+    this.previewCanvasA.width = 120
+    this.previewCanvasA.height = 400
+    this.previewCanvas = this.previewCanvasA.getContext("2d") as RenderingContext
+
+  }
+
+  render2d() {
+    let ctx = this.canvas as CanvasRenderingContext2D
+    let ctxPreview = this.previewCanvas as CanvasRenderingContext2D
+
+    let bw = this.canvasA.width / 10
+    let bh = this.canvasA.height / 20
+
     // Render the entire board
     for (let y = 0; y < 20; ++y) {
       for (let x = 0; x < 10; ++x) {
@@ -170,18 +175,18 @@ export class Game {
           ctx.fillStyle = 'black'
         }
 
-        ctx.fillRect(x * 20, y * 20, 20, 20)
+        ctx.fillRect(x * bw, y * bh, bw, bh)
       }
     }
 
     // Render the current piece
-    const current = offsets[this.piece][this.pieceR]
+    const current = PieceOffsets[this.piece][this.pieceR]
     ctx.fillStyle = PieceColors[this.piece]
-    for (var i = 0; i < current.length; ++i) {
-      let x = current[i][0] + this.pieceX
-      let y = current[i][1] + this.pieceY
+    for (let block of current) {
+      let x = block[0] + this.pieceX
+      let y = block[1] + this.pieceY
 
-      ctx.fillRect(x * 20, y * 20, 20, 20)
+      ctx.fillRect(x * bw, y * bh, bw, bh)
     }
 
     // Ghost piece
@@ -189,11 +194,11 @@ export class Game {
     const previousAlpha = ctx.globalAlpha
     ctx.globalAlpha = 0.5
     ctx.fillStyle = PieceColors[this.piece]
-    for (var i = 0; i < current.length; ++i) {
-      let x = current[i][0] + this.pieceX
-      let y = current[i][1] + floorY;
+    for (let block of current) {
+      let x = block[0] + this.pieceX
+      let y = block[1] + floorY;
 
-      ctx.fillRect(x * 20, y * 20, 20, 20)
+      ctx.fillRect(x * bw, y * bh, bw, bh)
     }
     ctx.globalAlpha = previousAlpha
 
@@ -201,41 +206,47 @@ export class Game {
     ctxPreview.fillStyle = 'black'
     ctxPreview.fillRect(0, 0, this.previewCanvasA.width, this.previewCanvasA.height)
 
-    var offsetX = 20
-    var offsetY = 20
+    let pbw = this.previewCanvasA.width / 6
+    let pbh = this.previewCanvasA.height / 20
+
+    var offsetX = pbw
+    var offsetY = pbh
 
     for (var i = 0; i < this.cfg.previewCount; ++i) {
       const piece = this.previewQueue[i]
-      const current = offsets[piece][0]
+      const current = PieceOffsets[piece][0]
 
       // Draw at offset, check faststack for offsets
       ctxPreview.fillStyle = PieceColors[piece]
 
-      for (var j = 0; j < current.length; ++j) {
-        let x = 20 * current[j][0] + offsetX;
-        let y = 20 * current[j][1] + offsetY;
+      for (let block of current) {
+        let x = pbw * block[0] + offsetX;
+        let y = pbh * block[1] + offsetY;
 
-        ctxPreview.fillRect(x, y, 20, 20)
+        ctxPreview.fillRect(x, y, pbw, pbh)
       }
 
-      offsetY += 60
+      offsetY += pbh * 3
     }
   }
 
-  renderWebGl(ctx: WebGLRenderingContext, ctxPreview: WebGLRenderingContext) {
+  renderWebGl() {
+    let ctx = this.canvas as WebGLRenderingContext
+    let ctxPreview = this.previewCanvas as WebGLRenderingContext
+
     // TODO
   }
 
   render() {
     // TODO: Don't bother passing the canvases explicitly
     if (this.canvas as CanvasRenderingContext2D && this.previewCanvas as CanvasRenderingContext2D) {
-      this.render2d(this.canvas as CanvasRenderingContext2D, this.previewCanvas as CanvasRenderingContext2D)
+      this.render2d()
     }
     else if (this.canvas as WebGLRenderingContext && this.previewCanvas as WebGLRenderingContext) {
-      this.renderWebGl(this.canvas as WebGLRenderingContext, this.previewCanvas as WebGLRenderingContext)
+      this.renderWebGl()
     }
     else {
-      // unreachable
+      // headlesss game state
     }
   }
 
@@ -256,10 +267,9 @@ export class Game {
   }
 
   isCollision(x: number, y: number, r: number): boolean {
-    const current = offsets[this.piece][r]
-    for (var i = 0; i < current.length; ++i) {
-      let nx = current[i][0] + x;
-      let ny = current[i][1] + y;
+    for (let block of PieceOffsets[this.piece][r]) {
+      let nx = block[0] + x;
+      let ny = block[1] + y;
       if (this.isOccupied(nx, ny)) {
         return true;
       }
@@ -355,18 +365,17 @@ export class Game {
     }
     if (kd.SPACE.isDown() && !this.downDebounce) {
       const floorY = this.getFloorY()
-      const current = offsets[this.piece][this.pieceR]
       // Place piece into board and get new piece
-      for (var i = 0; i < current.length; ++i) {
-        let x = current[i][0] + this.pieceX
-        let y = current[i][1] + floorY;
+      for (let block of PieceOffsets[this.piece][this.pieceR]) {
+        let x = block[0] + this.pieceX
+        let y = block[1] + floorY;
 
         this.board[y][x] = PieceMap[this.piece]
       }
 
       this.downDebounce = true
 
-      this.clearLines()
+      this.stats.placed += this.clearLines()
 
       // Generate a new piece
       this.previewQueue.push(this.randomizer.next())
@@ -380,7 +389,8 @@ export class Game {
   }
 
   update() {
-    // Update according to current state.
+    // Don't do this generally
+    this.handleInput()
   }
 
   frame() {
@@ -394,10 +404,11 @@ export class Game {
     //     this.update()
     // }
 
-    this.handleInput()
     this.update()
     this.render()
     this.frameLast = now
+    this.ticks += 1
+
     requestAnimationFrame(() => this.frame())
   }
 

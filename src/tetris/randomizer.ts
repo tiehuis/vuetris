@@ -1,16 +1,5 @@
 import { Pieces } from "./types"
 
-export interface Randomizer {
-  next(): string
-}
-
-export class SimpleRandomizer {
-  next(): string {
-    const choice = Math.floor(Math.random() * Pieces.length)
-    return Pieces[choice]
-  }
-}
-
 // Return a number between [min, max)
 function randomInt(min: number, max: number): number {
   const imin = Math.ceil(min)
@@ -24,6 +13,16 @@ function shuffle(a: any[]) {
     const tmp = a[j];
     a[j] = a[i];
     a[i] = tmp;
+  }
+}
+
+export interface Randomizer {
+  next(): string
+}
+
+export class SimpleRandomizer {
+  next(): string {
+    return Pieces[randomInt(0, Pieces.length)]
   }
 }
 

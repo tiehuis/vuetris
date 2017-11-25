@@ -82,16 +82,14 @@ export class SRSRotater {
     }
 
     // Get the table
-    let table = undefined
+    let table: number[][][] = []
     if (kickno == -1) {
       table = emptyWallkick
     } else {
       table = SRSRotater.kicks[kickno]
     }
 
-    for (let i = 0; i < table[state.pieceR].length; ++i) {
-      const ak = table[state.pieceR][i]
-
+    for (let ak of table[state.pieceR]) {
       const kickX = state.pieceX + ak[0]
       const kickY = state.pieceY + ak[1]
 
