@@ -45,6 +45,14 @@ export class Configuration {
     this.gravity = 20
     this.goal = 40
   }
+
+  static fromLocalStorage(): Configuration {
+    return JSON.parse(localStorage.saveData || null) || new Configuration();
+  }
+
+  toLocalStorage() {
+    localStorage.saveData = JSON.stringify(this);
+  }
 }
 
 export class Statistics {

@@ -36,7 +36,7 @@ export default Vue.extend({
     }
   },
   data() {
-    let game = new Game();
+    let game = new Game(Configuration.fromLocalStorage());
     return {
       // NOTE: We don't need to watch the game explicitly and shouldn't
       game: game,
