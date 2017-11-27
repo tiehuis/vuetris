@@ -7,7 +7,7 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (imax - imin) + imin)
 }
 
-function shuffle(a: any[]) {
+function shuffle<T>(a: T[]) {
   for (let i = a.length - 1; i >= 1; --i) {
     const j = randomInt(0, i + 1)
     const tmp = a[j];
@@ -16,17 +16,17 @@ function shuffle(a: any[]) {
   }
 }
 
-export interface Randomizer {
+export interface IRandomizer {
   next(): string
 }
 
-export class SimpleRandomizer {
+export class SimpleRandomizer implements IRandomizer {
   next(): string {
     return Pieces[randomInt(0, Pieces.length)]
   }
 }
 
-export class BagRandomizer {
+export class BagRandomizer implements IRandomizer {
   bag: number[]
 
   constructor() {
@@ -34,18 +34,18 @@ export class BagRandomizer {
     this.fillBag()
   }
 
+  next(): string {
+    const first = this.bag.shift() as number
+    if (this.bag.length === 0) {
+      this.fillBag()
+    }
+    return Pieces[first]
+  }
+
   private fillBag() {
     for (let i = 0; i < 7; ++i) {
       this.bag.push(i)
     }
     shuffle(this.bag)
-  }
-
-  next(): string {
-    const first = this.bag.shift() as number
-    if (this.bag.length == 0) {
-      this.fillBag()
-    }
-    return Pieces[first]
   }
 }

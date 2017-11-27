@@ -38,7 +38,7 @@ export class Input {
 // TODO: This should be configurable and passed to the engine.
 //
 // These should be mappings from the keydrown names to actions.
-var KeyMap = [
+const KeyMap = [
   'SPACE',
   'DOWN',
   'LEFT',
@@ -97,14 +97,14 @@ export class InputState {
 }
 
 function isDown(keystate: number, action: KeyActionFlag): boolean {
-  return (keystate & action) != 0
+  return (keystate & action) !== 0
 }
 
 export function readInput(game: Game): Input {
   let currentKeystate = 0
   let newKeyCount = 0
 
-  for (let action of KeyActionArray) {
+  for (const action of KeyActionArray) {
     // Every key is supposedly down?
     if (kd[KeyMap[action]].isDown()) {
       currentKeystate |= (1 << action)
@@ -113,10 +113,10 @@ export function readInput(game: Game): Input {
   }
 
   // TODO: newKeystate calculation here is bad
-  let newKeystate = currentKeystate & ~game.input.keystate
+  const newKeystate = currentKeystate & ~game.input.keystate
   game.input.keystate = currentKeystate
 
-  let actions: Input = new Input()
+  const actions = new Input()
   actions.newKeysCount = newKeyCount
 
   // How does DAS work?
@@ -133,7 +133,6 @@ export function readInput(game: Game): Input {
   // TODO: Takes a frame to DAS charge on the current. Trigger on piece entry if
   // we are over the limit as well.
   if (isDown(currentKeystate, KeyActionFlag.Left)) {
-    console.log('left is down')
     actions.extra |= InputExtra.FinesseMove
 
     if (game.input.dasCounter > 0) {
@@ -141,17 +140,13 @@ export function readInput(game: Game): Input {
     }
 
     if (isDown(newKeystate, KeyActionFlag.Left)) {
-      console.log('left is just down')
       actions.movement = -1
-    }
-    else if (game.input.dasCounter <= -game.cfg.das) {
+    } else if (game.input.dasCounter <= -game.cfg.das) {
       actions.movement = -game.cfg.arr
     }
 
     game.input.dasCounter -= 1
-  }
-  else if (isDown(currentKeystate, KeyActionFlag.Right)) {
-    console.log('right is down')
+  } else if (isDown(currentKeystate, KeyActionFlag.Right)) {
     actions.extra |= InputExtra.FinesseMove
 
     if (game.input.dasCounter < 0) {
@@ -159,25 +154,20 @@ export function readInput(game: Game): Input {
     }
 
     if (isDown(newKeystate, KeyActionFlag.Right)) {
-      console.log('right is just down')
       actions.movement = 1
-    }
-    else if (game.input.dasCounter >= game.cfg.das) {
+    } else if (game.input.dasCounter >= game.cfg.das) {
       actions.movement = game.cfg.arr
     }
 
     game.input.dasCounter += 1
-  }
-  else {
+  } else {
     game.input.dasCounter = 0
   }
 
   if (isDown(currentKeystate, KeyActionFlag.Down)) {
-    console.log('down is down')
     actions.gravity = game.cfg.gravity
   }
   if (isDown(newKeystate, KeyActionFlag.Up)) {
-    console.log('space is down')
     actions.gravity = 20
     actions.extra |= InputExtra.HardDrop
   }

@@ -4,7 +4,8 @@
     span#spacer
     canvas#preview
 
-    label Placed: {{ game.stats.placed }}
+    label Cleared: {{ game.stats.linesCleared }}
+    label Placed: {{ game.stats.blocksPlaced }}
     // Don't update this every frame, save cpu!
     label Time: {{ (game.ticks * 16 / 1000).toFixed(2)}}
 

@@ -1,23 +1,24 @@
-import { Game } from "./game"
+import { Game, Piece } from "./game"
 import { PieceMap } from "./types"
 
-export interface Rotater {
+export interface IRotater {
   // Attempt to rotate the games current piece by the specified amount.
   // Return whether the rotation was sucessful.
   rotate(state: Game, rotation: number): boolean
 }
 
-export class SimpleRotater {
-  constructor() { }
-
+// Straight-forward no wallkick rotation
+export class SimpleRotater implements IRotater {
   rotate(state: Game, rotation: number): boolean {
-    // Straight-forward no wallkick rotation
-    const newRotation = (state.pieceR + rotation + 4) % 4;
-    if (!state.isCollision(state.pieceX, state.pieceY, newRotation)) {
-      state.pieceR = newRotation
+    const piece = state.piece as Piece
+
+    const newR = (piece.r + rotation + 4) % 4;
+    if (!state.isCollision(piece.type, piece.x, piece.y, newR)) {
+      piece.r = newR
       return true
+    } else {
+      return false
     }
-    return false
   }
 }
 
@@ -28,9 +29,7 @@ const emptyWallkick = [
   [[0, 0]],
 ]
 
-export class SRSRotater {
-  constructor() { }
-
+export class SRSRotater implements IRotater {
   static kicksR = [1, 0, 0, -1, 0, 0, 0]
   static kicksL = [3, 2, 2, -1, 2, 2, 2]
 
@@ -40,7 +39,7 @@ export class SRSRotater {
       [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]], // 0 -> R
       [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]], // R -> 2
       [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]], // 2 -> L
-      [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]]  // L -> 0
+      [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],  // L -> 0
     ],
 
     // 1: I clockwise
@@ -48,7 +47,7 @@ export class SRSRotater {
       [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]], // 0 -> R
       [[0, 0], [-1, 0], [2, 0], [-1, -2], [2, 1]], // R -> 2
       [[0, 0], [2, 0], [-1, 0], [2, -1], [-1, 2]], // 2 -> L
-      [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]]  // L -> 0
+      [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]],  // L -> 0
     ],
 
     // 2: JLSTZ anticlockwise
@@ -56,7 +55,7 @@ export class SRSRotater {
       [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]], // 0 -> L
       [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]], // R -> 0
       [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]], // 2 -> R
-      [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]]  // L -> 2
+      [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],  // L -> 2
     ],
 
     // 3: I anticlockwise
@@ -64,40 +63,44 @@ export class SRSRotater {
       [[0, 0], [-1, 0], [2, 0], [-1, -2], [2, 1]], // 0 -> L
       [[0, 0], [2, 0], [-1, 0], [2, -1], [-1, 2]], // R -> 0
       [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]], // 2 -> R
-      [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]]  // L -> 2
-    ]
+      [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]],  // L -> 2
+    ],
   ]
 
   // TODO: Redo the entire rotation handling!
   rotate(state: Game, rotation: number): boolean {
-    const newRotation = (state.pieceR + rotation + 4) % 4;
-    const pieceIndex = PieceMap[state.piece]
+    const piece = state.piece as Piece
+
+    const newRotation = (piece.r + rotation + 4) % 4;
+    const pieceIndex = PieceMap[piece.type]
+
+    // Lookup the table for the given rotation
 
     // Determine which kicks we need
     let kickno = -1
-    if (rotation == 1) {
+    if (rotation === 1) {
       kickno = SRSRotater.kicksR[pieceIndex]
-    } else if (rotation == -1) {
+    } else if (rotation === -1) {
       kickno = SRSRotater.kicksL[pieceIndex]
     }
 
     // Get the table
     let table: number[][][] = []
-    if (kickno == -1) {
+    if (kickno === -1) {
       table = emptyWallkick
     } else {
       table = SRSRotater.kicks[kickno]
     }
 
-    for (let ak of table[state.pieceR]) {
-      const kickX = state.pieceX + ak[0]
-      const kickY = state.pieceY + ak[1]
+    for (const ak of table[piece.r]) {
+      const kickX = piece.x + ak[0]
+      const kickY = piece.y + ak[1]
 
-      if (!state.isCollision(kickX, kickY, newRotation)) {
+      if (!state.isCollision(piece.type, kickX, kickY, newRotation)) {
         // TODO: Check floorkick
-        state.pieceX = kickX
-        state.pieceY = kickY
-        state.pieceR = newRotation
+        piece.x = kickX
+        piece.y = kickY
+        piece.r = newRotation
         return true
       }
     }

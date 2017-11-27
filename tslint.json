@@ -1,0 +1,17 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "semicolon": false,
+    "quotemark": false,
+    "max-classes-per-file": false,
+    "no-bitwise": false,
+    "max-line-length": [
+      true,
+      80
+    ],
+    "member-access": [
+      true,
+      "no-public"
+    ]
+  }
+}
