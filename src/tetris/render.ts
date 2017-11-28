@@ -29,23 +29,32 @@ export function render2d(game: Game) {
   if (game.piece !== null) {
     const piece = game.piece as Piece
 
+    // Locking is indicated via an alpha channel decrement.
+    // TODO: Perform actual channel darkening instead since a linear alpha
+    // gradient isn't a great result?
+    if (game.cfg.lockTimer !== 0 && piece.lockTimer > 0) {
+      const lockRatio = 0.4 * (1 / (piece.lockTimer / game.cfg.lockTimer))
+      ctx.globalAlpha = lockRatio
+    } else {
+      ctx.globalAlpha = 1
+    }
+
     const current = PieceOffsets[piece.type][piece.r]
     ctx.fillStyle = PieceColors[piece.type]
     for (const block of current) {
-      const x = block[0] + piece.x
-      const y = block[1] + piece.y
+      const x = block[0] + piece.ix
+      const y = block[1] + piece.iy
 
       ctx.fillRect(x * bw, y * bh, bw, bh)
     }
 
     // Ghost piece
-    const floorY = game.getFloorY()
     const previousAlpha = ctx.globalAlpha
     ctx.globalAlpha = 0.5
     ctx.fillStyle = PieceColors[piece.type]
     for (const block of current) {
-      const x = block[0] + piece.x
-      const y = block[1] + floorY;
+      const x = block[0] + piece.ix
+      const y = block[1] + piece.hardDropY;
 
       ctx.fillRect(x * bw, y * bh, bw, bh)
     }

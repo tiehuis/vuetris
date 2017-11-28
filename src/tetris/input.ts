@@ -13,16 +13,12 @@ export const enum InputExtra {
 export class Input {
   // Left-right movement
   movement: number
-
   // Rotation amount
   rotation: number
-
   // Downward movement
   gravity: number
-
   // Specific extra action
   extra: InputExtra
-
   // For KPT calculation
   newKeysCount: number
 
@@ -85,8 +81,8 @@ const enum KeyActionFlag {
 // Input state stores all cross-frame input state that the game must be
 // aware of.
 export class InputState {
+  /// How many frames DAS has been active for
   dasCounter: number
-
   // Last known keystate. Used for key debouncing.
   keystate: number
 
@@ -165,7 +161,7 @@ export function readInput(game: Game): Input {
   }
 
   if (isDown(currentKeystate, KeyActionFlag.Down)) {
-    actions.gravity = game.cfg.gravity
+    actions.gravity = game.cfg.softDropGravity
   }
   if (isDown(newKeystate, KeyActionFlag.Up)) {
     actions.gravity = 20

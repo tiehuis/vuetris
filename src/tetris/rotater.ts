@@ -13,7 +13,7 @@ export class SimpleRotater implements IRotater {
     const piece = state.piece as Piece
 
     const newR = (piece.r + rotation + 4) % 4;
-    if (!state.isCollision(piece.type, piece.x, piece.y, newR)) {
+    if (!state.isCollision(piece.type, piece.ix, piece.iy, newR)) {
       piece.r = newR
       return true
     } else {
@@ -93,8 +93,8 @@ export class SRSRotater implements IRotater {
     }
 
     for (const ak of table[piece.r]) {
-      const kickX = piece.x + ak[0]
-      const kickY = piece.y + ak[1]
+      const kickX = piece.ix + ak[0]
+      const kickY = piece.iy + ak[1]
 
       if (!state.isCollision(piece.type, kickX, kickY, newRotation)) {
         // TODO: Check floorkick

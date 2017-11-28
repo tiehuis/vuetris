@@ -34,16 +34,20 @@ export class Configuration {
   /// Auto repeat rate (blocks/ms)
   arr: number
   /// Number of blocks to drop (blocks/ms)
-  gravity: number
+  softDropGravity: number
   /// Number of pieces to reached for win
   goal: number
+  /// How many frames a piece can be on the floor until auto-locking occurs
+  // TODO: Convert these to ms
+  lockTimer: number
 
   constructor() {
     this.das = 9
     this.previewCount = 4
     this.arr = 10
-    this.gravity = 20
+    this.softDropGravity = 20
     this.goal = 40
+    this.lockTimer = 60
   }
 
   static fromLocalStorage(): Configuration {
@@ -81,8 +85,12 @@ export class Piece {
   r: number
   /// Lock timer (ticks)
   lockTimer: number
-
+  /// Bottom Y hard drop value
   hardDropY: number
+  /// Integer portion of the X coordinate
+  get ix(): number { return Math.floor(this.x) }
+  /// Integer portion of the y coordinate
+  get iy(): number { return Math.floor(this.y) }
 
   constructor() {
     this.type = ''
@@ -116,6 +124,7 @@ export class Game {
   // Game variables
   // NOTE: Uint8Array would be better here.
   board: number[][]   // y, x indexed
+  gravity: number
 
   randomizer: IRandomizer
   previewQueue: string[]
@@ -156,6 +165,7 @@ export class Game {
     this.randomizer = new BagRandomizer()
     this.previewQueue = []
     this.rotater = new SimpleRotater()
+    this.gravity = 0.1
 
     this.piece = null
     this.holdPiece = null
@@ -209,16 +219,6 @@ export class Game {
 
   loop() {
     requestAnimationFrame(() => this.frame())
-  }
-
-  // TODO: Make private and cache variable
-  getFloorY(): number {
-    const piece = this.piece as Piece
-    let y = piece.y
-    while (!this.isCollision(piece.type, piece.x, y + 1, piece.r)) {
-      y += 1
-    }
-    return y
   }
 
   isCollision(type: string, x: number, y: number, r: number): boolean {
@@ -293,24 +293,12 @@ export class Game {
 
   private lockPiece() {
     const piece = this.piece as Piece
-
-    const floorY = this.getFloorY()
     for (const block of PieceOffsets[piece.type][piece.r]) {
-      const x = block[0] + piece.x
-      const y = block[1] + floorY;
+      const x = block[0] + piece.ix
+      const y = block[1] + piece.hardDropY
 
       this.board[y][x] = PieceMap[piece.type]
     }
-  }
-
-  private computeHardDropY() {
-    const piece = this.piece as Piece
-    let y = piece.y
-    while (!this.isCollision(piece.type, piece.x, y, piece.r)) {
-      y += 1
-    }
-    piece.hardDropY = y - 1
-    this.piece = piece
   }
 
   private nextPiece(): Piece {
@@ -387,7 +375,7 @@ export class Game {
         case GameState.NewPiece:
           {
             const piece = this.nextPiece()
-            if (this.isCollision(piece.type, piece.x, piece.y, piece.r)) {
+            if (this.isCollision(piece.type, piece.ix, piece.iy, piece.r)) {
               this.state = GameState.Lockout
             } else {
               this.state = GameState.Falling
@@ -399,9 +387,13 @@ export class Game {
         case GameState.Falling:
         case GameState.Locking:
           {
+            const piece = this.piece as Piece
+
             // We must recheck the lock timer since we may have moved from
             // locking to falling and do not want to lock in mid-air.
-            const isLocked = this.state === GameState.Locking
+            const isLocked = this.state === GameState.Locking &&
+              piece.lockTimer > this.cfg.lockTimer
+
             if ((input.extra & InputExtra.HardDrop) || isLocked) {
               instantFrame = true
               this.state = GameState.LineClear
@@ -419,12 +411,10 @@ export class Game {
               this.rotater.rotate(this, input.rotation);
             }
 
-            const piece = this.piece as Piece
-
             let distance = input.movement
             if (distance !== 0) {
               while (distance < 0) {
-                if (!this.isCollision(piece.type, piece.x - 1, piece.y,
+                if (!this.isCollision(piece.type, piece.ix - 1, piece.iy,
                   piece.r)) {
                   piece.x -= 1
                   distance += 1
@@ -434,7 +424,7 @@ export class Game {
               }
 
               while (distance > 0) {
-                if (!this.isCollision(piece.type, piece.x + 1, piece.y,
+                if (!this.isCollision(piece.type, piece.ix + 1, piece.iy,
                   piece.r)) {
                   piece.x += 1
                   distance -= 1
@@ -444,13 +434,21 @@ export class Game {
               }
             }
 
-            // This is ugly, more pure functions
-            this.piece = piece
-            this.computeHardDropY()
+            // Compute hard drop and cache, this only changes on an actual
+            // movement so we don't need to redo this here.
+            let y = piece.iy
+            while (!this.isCollision(piece.type, piece.ix, y + 1, piece.r)) {
+              y += 1
+            }
+            piece.hardDropY = y
 
-            piece.y += input.gravity
+            piece.y += input.gravity + this.gravity
             if (piece.y > piece.hardDropY) {
               piece.y = piece.hardDropY
+              this.state = GameState.Locking
+            } else {
+              // Reset lock timer
+              this.state = GameState.Falling
             }
 
             // Check movement and if lock timer should reset if it is allowed

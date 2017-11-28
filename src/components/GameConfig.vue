@@ -10,8 +10,11 @@
       label(for='config-arr') ARR
       input(v-model='config.arr', id='arr', type='number')
 
-      label(for='config-gravity') Gravity
-      input(v-model='config.gravity', id='gravity', type='number')
+      label(for='config-soft-drop-gravity') Gravity
+      input(v-model='config.softDropGravity', id='softDropGravity', type='number')
+
+      label(for='config-lock-timer') Gravity
+      input(v-model='config.lockTimer', id='lockTimer', type='number')
 
       label(for='config-goal') Goal
       input(v-model='config.goal', id='goal', type='number')
