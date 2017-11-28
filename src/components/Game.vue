@@ -1,8 +1,11 @@
 <template lang="pug">
   div
-    canvas#board
-    span#spacer
-    canvas#preview
+    div
+      canvas#hold
+      span#spacer
+      canvas#board
+      span#spacer
+      canvas#preview
 
     label Cleared: {{ game.stats.linesCleared }}
     label Placed: {{ game.stats.blocksPlaced }}
@@ -19,7 +22,7 @@ import { Game, Configuration } from "../tetris/game";
 export default Vue.extend({
   methods: {
     startGame() {
-      this.game.attachCanvas("board", "preview");
+      this.game.attachCanvas("board", "preview", "hold");
       this.startTime = new Date();
       this.game.loop();
     },
@@ -52,6 +55,10 @@ export default Vue.extend({
 <style scoped lang="sass">
   #spacer
     padding-right: 10px
+
+  #hold
+    height: 100px
+    width: 100px
 
   #board
     height: 400px

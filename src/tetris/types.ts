@@ -19,6 +19,10 @@ export const PieceColors: { [s: string]: string } = {
   Z: 'pink',
 }
 
+/// The base piece offsets are derived from SRS rotation.
+///
+/// To mimic other piece rotations, this should be done by the appropriate
+/// rotater type.
 export const PieceOffsets: { [s: string]: number[][][] } = {
   I: [
     [[0, 1], [1, 1], [2, 1], [3, 1]],

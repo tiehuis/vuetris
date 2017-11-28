@@ -14,7 +14,7 @@ function timestamp() {
   }
 }
 
-const enum GameState {
+export const enum GameState {
   Ready,
   Go,
   NewPiece,
@@ -107,8 +107,11 @@ export class Game {
   canvas: RenderingContext
   canvasA: HTMLCanvasElement
   previewCanvasName: string
-  previewCanvas: CanvasRenderingContext2D | WebGLRenderingContext
+  previewCanvas: RenderingContext
   previewCanvasA: HTMLCanvasElement
+  holdCanvasName: string
+  holdCanvas: RenderingContext
+  holdCanvasA: HTMLCanvasElement
 
   // Game variables
   // NOTE: Uint8Array would be better here.
@@ -122,6 +125,8 @@ export class Game {
   rotater: IRotater
 
   piece: Piece | null
+  holdPiece: string | null
+  holdAvailable: boolean
 
   // Configuration
   cfg: Configuration
@@ -134,8 +139,6 @@ export class Game {
 
   // Input state
   input: InputState
-
-  lockTimer: number
 
   // Has the game finished?
   finished: boolean
@@ -155,6 +158,8 @@ export class Game {
     this.rotater = new SimpleRotater()
 
     this.piece = null
+    this.holdPiece = null
+    this.holdAvailable = true
 
     this.input = new InputState()
 
@@ -167,8 +172,6 @@ export class Game {
     this.ticks = 0
     this.ticksAll = 0
 
-    this.lockTimer = 0
-
     this.finished = false
 
     for (let x = 0; x < this.cfg.previewCount; ++x) {
@@ -176,9 +179,10 @@ export class Game {
     }
   }
 
-  attachCanvas(canvasId: string, previewCanvasId: string) {
+  attachCanvas(canvasId: string, previewCanvasId: string, holdCanvasI: string) {
     this.canvasName = canvasId
     this.previewCanvasName = previewCanvasId
+    this.holdCanvasName = holdCanvasI
 
     this.canvasA = document.getElementById(canvasId) as HTMLCanvasElement
     // We explicitly set this as the canvas is not set correctly on
@@ -194,6 +198,13 @@ export class Game {
     this.previewCanvasA.height = 400
     this.previewCanvas =
       this.previewCanvasA.getContext("2d") as RenderingContext
+
+    this.holdCanvasA =
+      document.getElementById(holdCanvasI) as HTMLCanvasElement
+    this.holdCanvasA.width = 100
+    this.holdCanvasA.height = 80
+    this.holdCanvas =
+      this.holdCanvasA.getContext("2d") as RenderingContext
   }
 
   loop() {
@@ -302,6 +313,47 @@ export class Game {
     this.piece = piece
   }
 
+  private nextPiece(): Piece {
+    // TODO: Apply IRS/IHS
+    this.previewQueue.push(this.randomizer.next())
+
+    const piece = new Piece()
+    piece.type = this.previewQueue.shift() as string
+    piece.x = 5
+    piece.y = 0
+    piece.r = 0
+
+    this.holdAvailable = true
+    return piece
+  }
+
+  private tryHold(): boolean {
+    const piece = this.piece as Piece
+
+    if (this.holdAvailable) {
+      if (this.holdPiece == null) {
+        this.holdPiece = piece.type
+        this.piece = this.nextPiece()
+      } else {
+        piece.x = 5
+        piece.y = 0
+        piece.r = 0
+
+        const tmp = this.holdPiece
+        this.holdPiece = piece.type
+        piece.type = tmp
+
+        this.piece = piece
+      }
+
+      // TODO: Update hard drop
+      this.holdAvailable = false
+      return true
+    }
+
+    return false
+  }
+
   private update() {
     let instantFrame = false
     const input = readInput(this)
@@ -334,21 +386,12 @@ export class Game {
 
         case GameState.NewPiece:
           {
-            // TODO: Apply IRS/IHS
-            this.previewQueue.push(this.randomizer.next())
-
-            const piece = new Piece()
-            piece.type = this.previewQueue.shift() as string
-            piece.x = 5
-            piece.y = 0
-            piece.r = 0
-
+            const piece = this.nextPiece()
             if (this.isCollision(piece.type, piece.x, piece.y, piece.r)) {
               this.state = GameState.Lockout
             } else {
               this.state = GameState.Falling
             }
-
             this.piece = piece
           }
           break
@@ -369,7 +412,7 @@ export class Game {
             // after? Possibly make this configurable.
 
             if (input.extra & InputExtra.Hold) {
-              // Perform hold
+              this.tryHold()
             }
 
             if (input.rotation) {
@@ -410,13 +453,13 @@ export class Game {
               piece.y = piece.hardDropY
             }
 
-            this.piece = piece
-
             // Check movement and if lock timer should reset if it is allowed
 
             if (this.state === GameState.Locking) {
-              this.lockTimer += 1
+              piece.lockTimer += 1
             }
+
+            this.piece = piece
           }
           break
 

@@ -16,7 +16,7 @@
       label(for='config-goal') Goal
       input(v-model='config.goal', id='goal', type='number')
 
-      button(v-on:click='saveConfig') Save Settings
+      button(v-on:click.once='saveConfig') Save Settings
 </template>
 
 <script lang="ts">

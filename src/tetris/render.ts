@@ -1,9 +1,10 @@
-import { Game, Piece } from "./game"
+import { Game, GameState, Piece } from "./game"
 import { PieceColors, PieceMap, PieceOffsets, Pieces } from "./types"
 
 export function render2d(game: Game) {
   const ctx = game.canvas as CanvasRenderingContext2D
   const ctxPreview = game.previewCanvas as CanvasRenderingContext2D
+  const ctxHold = game.holdCanvas as CanvasRenderingContext2D
 
   const bw = game.canvasA.width / 10
   const bh = game.canvasA.height / 20
@@ -51,6 +52,23 @@ export function render2d(game: Game) {
     ctx.globalAlpha = previousAlpha
   }
 
+  ctxHold.fillStyle = 'black'
+  ctxHold.fillRect(0, 0, game.holdCanvasA.width, game.holdCanvasA.height)
+
+  if (game.holdPiece != null) {
+    const hbw = (game.holdCanvasA.width) / 5
+    const hbh = (game.holdCanvasA.height) / 5
+
+    const current = PieceOffsets[game.holdPiece][0]
+    ctxHold.fillStyle = PieceColors[game.holdPiece]
+    for (const block of current) {
+      const x = block[0]
+      const y = block[1]
+
+      ctxHold.fillRect(x * hbw + hbw / 2, y * hbh + hbh / 2, hbw, hbh)
+    }
+  }
+
   // Render the preview pieces.
   ctxPreview.fillStyle = 'black'
   ctxPreview.fillRect(0, 0, game.previewCanvasA.width,
@@ -63,6 +81,7 @@ export function render2d(game: Game) {
   let offsetY = pbh
 
   for (let i = 0; i < game.cfg.previewCount; ++i) {
+    // TODO: Not setting up queue correctly on hold?
     const piece = game.previewQueue[i]
     const current = PieceOffsets[piece][0]
 
@@ -77,6 +96,33 @@ export function render2d(game: Game) {
     }
 
     offsetY += pbh * 3
+  }
+
+  // Draw status
+  let text: string | null = null
+  switch (game.state) {
+    case GameState.Ready:
+      text = 'READY'
+      break
+    case GameState.Go:
+      text = 'GO'
+      break
+    case GameState.Win:
+      text = 'EXCELLENT'
+      break
+    case GameState.Lockout:
+      text = 'GAMEOVER'
+      break
+  }
+
+  if (text != null) {
+    const midw = game.canvasA.width / 2
+    const midh = game.canvasA.height / 2
+    const width = ctx.measureText(text).width
+
+    ctx.fillStyle = 'white'
+    ctx.font = '22px monospace'
+    ctx.fillText(text, midw - width / 2, midh)
   }
 }
 
