@@ -347,9 +347,9 @@ export class Game {
 
     const piece = new Piece()
     piece.type = this.previewQueue.shift() as string
-    piece.x = 5
+    piece.x = this.rotater.EntryX[piece.type]
     piece.y = 0
-    piece.r = 0
+    piece.r = this.rotater.EntryTheta[piece.type]
 
     this.holdAvailable = true
     return piece

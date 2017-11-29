@@ -2,6 +2,10 @@ import { Game, Piece } from "./game"
 import { PieceMap } from "./types"
 
 export interface IRotater {
+  /// Initial entry rotation
+  EntryTheta: { [s: string]: number }
+  /// Initial entry x position
+  EntryX: { [s: string]: number }
   // Attempt to rotate the games current piece by the specified amount.
   // Return whether the rotation was sucessful.
   rotate(state: Game, rotation: number): boolean
@@ -9,6 +13,14 @@ export interface IRotater {
 
 // Straight-forward no wallkick rotation
 export class SimpleRotater implements IRotater {
+  EntryTheta = {
+    I: 0, J: 0, L: 0, O: 0, S: 0, T: 0, Z: 0,
+  }
+
+  EntryX = {
+    I: 3, J: 3, L: 3, O: 3, S: 3, T: 3, Z: 3,
+  }
+
   rotate(state: Game, rotation: number): boolean {
     const piece = state.piece as Piece
 
@@ -30,6 +42,14 @@ const emptyWallkick = [
 ]
 
 export class SRSRotater implements IRotater {
+  EntryTheta = {
+    I: 0, J: 0, L: 0, O: 0, S: 0, T: 0, Z: 0,
+  }
+
+  EntryX = {
+    I: 3, J: 3, L: 3, O: 3, S: 3, T: 3, Z: 3,
+  }
+
   static kicksR = [1, 0, 0, -1, 0, 0, 0]
   static kicksL = [3, 2, 2, -1, 2, 2, 2]
 
