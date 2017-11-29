@@ -103,8 +103,12 @@ export function readInput(game: Game): Input {
   for (const action of KeyActionArray) {
     // Every key is supposedly down?
     if (kd[KeyMap[action]].isDown()) {
-      currentKeystate |= (1 << action)
-      newKeyCount += 1
+      const actionFlag = 1 << action
+      currentKeystate |= actionFlag
+
+      if ((game.input.keystate & actionFlag) === 0) {
+        newKeyCount += 1
+      }
     }
   }
 

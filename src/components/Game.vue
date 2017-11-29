@@ -9,8 +9,10 @@
 
     label Cleared: {{ game.stats.linesCleared }}
     label Placed: {{ game.stats.blocksPlaced }}
+    label TPS: {{ currentTime() != 0 ? (game.stats.blocksPlaced / currentTime()).toFixed(2) : 0 }}
+    label KPT: {{ game.stats.blocksPlaced != 0 ? (game.stats.keysPressed / game.stats.blocksPlaced).toFixed(2) : 0 }}
     // Don't update this every frame, save cpu!
-    label Time: {{ (game.ticks * 16 / 1000).toFixed(2)}}
+    label Time: {{ currentTime() }}
 
     button(v-on:click='restart()') Restart
 </template>
@@ -30,13 +32,9 @@ export default Vue.extend({
       // TODO: Restart with a non-empty board has soft-drop issues
       this.game = new Game(Configuration.fromLocalStorage());
       this.startGame();
-    }
-  },
-  computed: {
+    },
     currentTime() {
-      // let game = this.game;
-      // return (game.ticks * 16 / 1000).toFixed(2);
-      return "sample";
+      return (this.game.ticks * 16 / 1000).toFixed(2);
     }
   },
   data() {

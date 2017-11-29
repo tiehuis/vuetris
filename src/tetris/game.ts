@@ -385,6 +385,7 @@ export class Game {
   private update() {
     let instantFrame = false
     const input = readInput(this)
+    this.stats.keysPressed += input.newKeysCount
 
     while (true) {
       switch (this.state) {
