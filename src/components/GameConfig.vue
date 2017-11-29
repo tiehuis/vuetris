@@ -29,7 +29,8 @@
         option(value='srs') SRS
         option(value='simple') Simple
 
-      button(v-on:click.once='saveConfig') Save Settings
+      button(v-on:click='saveConfig') Save Settings
+      button(v-on:click='clearConfig') Clear Saved Configuration
 </template>
 
 <script lang="ts">
@@ -43,7 +44,7 @@ export default Vue.extend({
     };
   },
   methods: {
-    saveConfig: function(event: any) {
+    saveConfig: function() {
       let form = document.getElementById("settings") as HTMLDivElement;
       let inputs = form.getElementsByTagName("input");
       let selects = form.getElementsByTagName("select");
@@ -64,6 +65,9 @@ export default Vue.extend({
       }
 
       config.toLocalStorage();
+    },
+    clearConfig: function() {
+      localStorage.clear();
     }
   }
 });

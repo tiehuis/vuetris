@@ -31,10 +31,8 @@ export class Input {
   }
 }
 
-// TODO: This should be configurable and passed to the engine.
-//
 // These should be mappings from the keydrown names to actions.
-const KeyMap = [
+const DefaultKeyMap = [
   'SPACE',
   'DOWN',
   'LEFT',
@@ -85,10 +83,13 @@ export class InputState {
   dasCounter: number
   // Last known keystate. Used for key debouncing.
   keystate: number
+  // User-defined keymap
+  keyMap: string[]
 
-  constructor() {
+  constructor(keyMap: string[] = DefaultKeyMap) {
     this.dasCounter = 0
     this.keystate = 0
+    this.keyMap = keyMap
   }
 }
 
@@ -102,7 +103,7 @@ export function readInput(game: Game): Input {
 
   for (const action of KeyActionArray) {
     // Every key is supposedly down?
-    if (kd[KeyMap[action]].isDown()) {
+    if (kd[game.input.keyMap[action]].isDown()) {
       const actionFlag = 1 << action
       currentKeystate |= actionFlag
 

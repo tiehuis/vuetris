@@ -213,6 +213,7 @@ export class Game {
     this.holdPiece = null
     this.holdAvailable = true
 
+    // Pass in the keymap here from the configuration.
     this.input = new InputState()
 
     this.state = GameState.Ready
