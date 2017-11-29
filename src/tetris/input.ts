@@ -132,6 +132,12 @@ export function readInput(game: Game): Input {
   //
   // TODO: Takes a frame to DAS charge on the current. Trigger on piece entry if
   // we are over the limit as well.
+  //
+  // TODO: We currently do not prioritize any direction. This gives us the nice
+  // feature that a single-tap from a DAS to wall can occur even if the the
+  // DAS direction is still held. This feels a bit different to other games and
+  // still need to determine if it works best.
+  let directional = false
   if (isDown(currentKeystate, KeyActionFlag.Left)) {
     actions.extra |= InputExtra.FinesseMove
 
@@ -146,7 +152,9 @@ export function readInput(game: Game): Input {
     }
 
     game.input.dasCounter -= 1
-  } else if (isDown(currentKeystate, KeyActionFlag.Right)) {
+    directional = true
+  }
+  if (isDown(currentKeystate, KeyActionFlag.Right)) {
     actions.extra |= InputExtra.FinesseMove
 
     if (game.input.dasCounter < 0) {
@@ -160,7 +168,10 @@ export function readInput(game: Game): Input {
     }
 
     game.input.dasCounter += 1
-  } else {
+    directional = true
+  }
+
+  if (!directional) {
     game.input.dasCounter = 0
   }
 
