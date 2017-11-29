@@ -1,9 +1,9 @@
 import * as kd from "keydrown"
 
 import { Input, InputExtra, InputState, readInput } from "./input"
-import { BagRandomizer, IRandomizer } from "./randomizer"
+import { BagRandomizer, IRandomizer, SimpleRandomizer } from "./randomizer"
 import { render2d, renderWebGl } from "./render"
-import { IRotater, SimpleRotater } from "./rotater"
+import { IRotater, SimpleRotater, SRSRotater } from "./rotater"
 import { PieceColors, PieceMap, PieceOffsets, Pieces } from "./types"
 
 function timestamp() {
@@ -27,6 +27,8 @@ export const enum GameState {
 }
 
 export class Configuration {
+  /// Configuration version
+  version: number
   /// Delayed auto shift (ms)
   das: number
   /// Number of preview blocks to display
@@ -40,22 +42,60 @@ export class Configuration {
   /// How many frames a piece can be on the floor until auto-locking occurs
   // TODO: Convert these to ms
   lockTimer: number
+  /// Type of randomizer to use
+  randomizer: "simple" | "bag"
+  /// Type of rotater to use
+  rotater: "simple" | "srs"
 
   constructor() {
+    this.version = 1
     this.das = 9
     this.previewCount = 4
     this.arr = 10
     this.softDropGravity = 20
     this.goal = 40
     this.lockTimer = 60
+    this.randomizer = "bag"
+    this.rotater = "srs"
   }
 
   static fromLocalStorage(): Configuration {
-    return JSON.parse(localStorage.saveData || null) || new Configuration();
+    // We need to append new items to ensure we have the methods associated on
+    // the configuration available.
+    const cfg: any = new Configuration()
+
+    const saved = JSON.parse(localStorage.saveData || null)
+    if (saved != null) {
+      for (const key in saved) {
+        if (saved.hasOwnProperty(key)) {
+          cfg[key] = saved[key]
+        }
+      }
+    }
+
+    return cfg;
   }
 
   toLocalStorage() {
     localStorage.saveData = JSON.stringify(this);
+  }
+
+  newRandomizer(): IRandomizer {
+    switch (this.randomizer) {
+      case "simple":
+        return new SimpleRandomizer()
+      case "bag":
+        return new BagRandomizer()
+    }
+  }
+
+  newRotater(): IRotater {
+    switch (this.rotater) {
+      case "simple":
+        return new SimpleRotater()
+      case "srs":
+        return new SRSRotater()
+    }
   }
 }
 
@@ -162,9 +202,11 @@ export class Game {
       }
     }
 
-    this.randomizer = new BagRandomizer()
+    this.cfg = cfg || new Configuration()
+    this.randomizer = this.cfg.newRandomizer()
+    this.rotater = this.cfg.newRotater()
+
     this.previewQueue = []
-    this.rotater = new SimpleRotater()
     this.gravity = 0.1
 
     this.piece = null
@@ -174,8 +216,6 @@ export class Game {
     this.input = new InputState()
 
     this.state = GameState.Ready
-
-    this.cfg = cfg || new Configuration()
 
     this.stats = new Statistics()
 

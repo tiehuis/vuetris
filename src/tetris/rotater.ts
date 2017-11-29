@@ -72,10 +72,9 @@ export class SRSRotater implements IRotater {
     const piece = state.piece as Piece
 
     const newRotation = (piece.r + rotation + 4) % 4;
-    const pieceIndex = PieceMap[piece.type]
+    const pieceIndex = PieceMap[piece.type] - 1
 
     // Lookup the table for the given rotation
-
     // Determine which kicks we need
     let kickno = -1
     if (rotation === 1) {

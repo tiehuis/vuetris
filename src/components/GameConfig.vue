@@ -1,23 +1,33 @@
 <template lang="pug">
   div#settings
     fieldset
-      label(for='config-das') DAS
+      label(for='das') DAS
       input(v-model='config.das', id='das' type='number')
 
-      label(for='config-preview-count') Preview Count
+      label(for='previewCount') Preview Count
       input(v-model='config.previewCount', id='previewCount', type='number')
 
-      label(for='config-arr') ARR
+      label(for='arr') ARR
       input(v-model='config.arr', id='arr', type='number')
 
-      label(for='config-soft-drop-gravity') Gravity
+      label(for='softDropGravity') Gravity
       input(v-model='config.softDropGravity', id='softDropGravity', type='number')
 
-      label(for='config-lock-timer') Gravity
+      label(for='lockTimer') Gravity
       input(v-model='config.lockTimer', id='lockTimer', type='number')
 
-      label(for='config-goal') Goal
+      label(for='goal') Goal
       input(v-model='config.goal', id='goal', type='number')
+
+      label(for='randomizer') randomizer
+      select(v-model='config.randomizer', id='randomizer')
+        option(value='bag') Bag Randomizer
+        option(value='simple') Simple
+
+      label(for='rotater') randomizer
+      select(v-model='config.rotater', id='rotater')
+        option(value='srs') SRS
+        option(value='simple') Simple
 
       button(v-on:click.once='saveConfig') Save Settings
 </template>
@@ -35,11 +45,22 @@ export default Vue.extend({
   methods: {
     saveConfig: function(event: any) {
       let form = document.getElementById("settings") as HTMLDivElement;
-      let inputs = document.getElementsByTagName("input");
+      let inputs = form.getElementsByTagName("input");
+      let selects = form.getElementsByTagName("select");
 
       let config: any = new Configuration();
       for (let i = 0; i < inputs.length; ++i) {
-        config[inputs[i].id] = inputs[i].value;
+        switch (inputs[i].type) {
+          case "number":
+            config[inputs[i].id] = parseInt(inputs[i].value, 10);
+            break;
+          default:
+            config[inputs[i].id] = inputs[i].value;
+            break;
+        }
+      }
+      for (let i = 0; i < selects.length; ++i) {
+        config[selects[i].id] = selects[i].value;
       }
 
       config.toLocalStorage();

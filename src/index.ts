@@ -9,7 +9,7 @@ OfflinePluginRuntime.install()
 // configuration file.
 //
 // This is a data object which is then embedded into the game component.
-let v = new Vue({
+const v = new Vue({
   el: "#app",
   template: `
     <div class="container">
@@ -24,6 +24,6 @@ let v = new Vue({
     </div>`,
   components: {
     GameComponent,
-    GameConfigComponent
-  }
+    GameConfigComponent,
+  },
 });

@@ -27,7 +27,8 @@ export default Vue.extend({
       this.game.loop();
     },
     restart() {
-      this.game = new Game();
+      // TODO: Restart with a non-empty board has soft-drop issues
+      this.game = new Game(Configuration.fromLocalStorage());
       this.startGame();
     }
   },
