@@ -4,7 +4,7 @@ import { Input, InputExtra, InputState, readInput } from "./input"
 import { BagRandomizer, IRandomizer, SimpleRandomizer } from "./randomizer"
 import { render2d, renderWebGl } from "./render"
 import { IRotater, SimpleRotater, SRSRotater } from "./rotater"
-import { PieceColors, PieceMap, PieceOffsets, Pieces } from "./types"
+import { PieceColors, PieceMap, PieceOffsets, Pieces, PieceType } from "./types"
 
 function timestamp() {
   if (window.performance && window.performance.now) {
@@ -118,7 +118,7 @@ export class Statistics {
 
 export class Piece {
   /// Type of piece this is
-  type: string
+  type: PieceType
   /// X coordinate
   x: number
   /// Y coordinate
@@ -135,7 +135,7 @@ export class Piece {
   get iy(): number { return Math.floor(this.y) }
 
   constructor() {
-    this.type = ''
+    this.type = 'I'
     this.x = 0
     this.y = 0
     this.r = 0
@@ -169,14 +169,14 @@ export class Game {
   gravity: number
 
   randomizer: IRandomizer
-  previewQueue: string[]
+  previewQueue: PieceType[]
 
   state: GameState
 
   rotater: IRotater
 
   piece: Piece | null
-  holdPiece: string | null
+  holdPiece: PieceType | null
   holdAvailable: boolean
 
   // Configuration
@@ -373,7 +373,7 @@ export class Game {
     this.previewQueue.push(this.randomizer.next())
 
     const piece = new Piece()
-    piece.type = this.previewQueue.shift() as string
+    piece.type = this.previewQueue.shift() as PieceType
     piece.x = this.rotater.EntryX[piece.type]
     piece.y = 0
     piece.r = this.rotater.EntryTheta[piece.type]

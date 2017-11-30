@@ -1,4 +1,4 @@
-import { Pieces } from "./types"
+import { Pieces, PieceType } from "./types"
 
 // Return a number between [min, max)
 function randomInt(min: number, max: number): number {
@@ -17,11 +17,11 @@ function shuffle<T>(a: T[]) {
 }
 
 export interface IRandomizer {
-  next(): string
+  next(): PieceType
 }
 
 export class SimpleRandomizer implements IRandomizer {
-  next(): string {
+  next(): PieceType {
     return Pieces[randomInt(0, Pieces.length)]
   }
 }
@@ -34,7 +34,7 @@ export class BagRandomizer implements IRandomizer {
     this.fillBag()
   }
 
-  next(): string {
+  next(): PieceType {
     const first = this.bag.shift() as number
     if (this.bag.length === 0) {
       this.fillBag()

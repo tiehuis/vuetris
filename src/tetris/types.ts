@@ -1,4 +1,6 @@
-export const Pieces: string[] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
+export type PieceType = 'I' | 'J' | 'L' | 'O' | 'S' | 'T' | 'Z'
+
+export const Pieces: PieceType[] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
 export const PieceMap: { [s: string]: number } = {
   I: 1,
   J: 2,
