@@ -33,14 +33,15 @@ export class Configuration {
   das: number
   /// Number of preview blocks to display
   previewCount: number
-  /// Auto repeat rate (blocks/ms)
+  /// Auto repeat rate (ms per block)
   arr: number
-  /// Number of blocks to drop (blocks/ms)
+  /// Number of blocks to drop (ms per block)
   softDropGravity: number
+  /// Start gravity value (ms per block)
+  gravity: number
   /// Number of pieces to reached for win
   goal: number
-  /// How many frames a piece can be on the floor until auto-locking occurs
-  // TODO: Convert these to ms
+  /// Time until auto-lock (ms)
   lockTimer: number
   /// Type of randomizer to use
   randomizer: "simple" | "bag"
@@ -49,12 +50,13 @@ export class Configuration {
 
   constructor() {
     this.version = 1
-    this.das = 9
+    this.das = 150
     this.previewCount = 4
-    this.arr = 10
-    this.softDropGravity = 20
+    this.arr = 0
+    this.gravity = 1000
+    this.softDropGravity = 0
     this.goal = 40
-    this.lockTimer = 60
+    this.lockTimer = 0
     this.randomizer = "bag"
     this.rotater = "srs"
   }
@@ -183,6 +185,15 @@ export class Game {
   // Output statistics
   stats: Statistics
 
+  // Current fps. We currently fix this to 60fps but this should be dynamically
+  // calculated every frame to match the rate at which requestAnimationFrame
+  // runs.
+  //
+  // NOTE: Need to consider how the variable fps ticks affects certain things.
+  // i.e. DAS charging while a fps drop occurs?
+  //
+  // TODO: Only will run correctly on a 60hz refresh!
+  fps: number
   ticks: number
   ticksAll: number
 
@@ -207,7 +218,7 @@ export class Game {
     this.rotater = this.cfg.newRotater()
 
     this.previewQueue = []
-    this.gravity = 0.1
+    this.gravity = this.cfg.gravity
 
     this.piece = null
     this.holdPiece = null
@@ -222,6 +233,7 @@ export class Game {
 
     this.ticks = 0
     this.ticksAll = 0
+    this.fps = 60
 
     this.finished = false
 
@@ -272,6 +284,20 @@ export class Game {
     }
 
     return false;
+  }
+
+  /// Converts a configuration in ms into the required the number of ticks
+  /// (floored) that should elapse by the engine.
+  msToTicks(n: number) {
+    const msPerTick = 1000 / this.fps
+    return Math.floor(n / msPerTick)
+  }
+
+  /// Converts a ms per block value into the number of fractional blocks that
+  /// need to be moved during this frame.
+  msPerBlock(n: number) {
+    const msPerTick = 1000 / this.fps
+    return msPerTick / n
   }
 
   private render() {
@@ -434,7 +460,7 @@ export class Game {
             // We must recheck the lock timer since we may have moved from
             // locking to falling and do not want to lock in mid-air.
             const isLocked = this.state === GameState.Locking &&
-              piece.lockTimer > this.cfg.lockTimer
+              piece.lockTimer >= this.msToTicks(this.cfg.lockTimer)
 
             if ((input.extra & InputExtra.HardDrop) || isLocked) {
               instantFrame = true
@@ -484,7 +510,7 @@ export class Game {
             }
             piece.hardDropY = y
 
-            piece.y += input.gravity + this.gravity
+            piece.y += input.gravity + this.msPerBlock(this.gravity)
             if (piece.y > piece.hardDropY) {
               piece.y = piece.hardDropY
               this.state = GameState.Locking

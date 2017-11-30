@@ -148,8 +148,12 @@ export function readInput(game: Game): Input {
 
     if (isDown(newKeystate, KeyActionFlag.Left)) {
       actions.movement = -1
-    } else if (game.input.dasCounter <= -game.cfg.das) {
-      actions.movement = -game.cfg.arr
+    } else if (game.input.dasCounter <= game.msToTicks(-game.cfg.das)) {
+      if (game.cfg.arr === 0) {
+        actions.movement = -10
+      } else {
+        actions.movement = game.msPerBlock(-game.cfg.arr)
+      }
     }
 
     game.input.dasCounter -= 1
@@ -164,8 +168,12 @@ export function readInput(game: Game): Input {
 
     if (isDown(newKeystate, KeyActionFlag.Right)) {
       actions.movement = 1
-    } else if (game.input.dasCounter >= game.cfg.das) {
-      actions.movement = game.cfg.arr
+    } else if (game.input.dasCounter >= game.msToTicks(game.cfg.das)) {
+      if (game.cfg.arr === 0) {
+        actions.movement = 10
+      } else {
+        actions.movement = game.msPerBlock(game.cfg.arr)
+      }
     }
 
     game.input.dasCounter += 1
@@ -177,7 +185,11 @@ export function readInput(game: Game): Input {
   }
 
   if (isDown(currentKeystate, KeyActionFlag.Down)) {
-    actions.gravity = game.cfg.softDropGravity
+    if (game.cfg.softDropGravity === 0) {
+      actions.gravity = 20
+    } else {
+      actions.gravity = game.msPerBlock(game.cfg.softDropGravity)
+    }
   }
   if (isDown(newKeystate, KeyActionFlag.Up)) {
     actions.gravity = 20
