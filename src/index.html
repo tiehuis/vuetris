@@ -8,14 +8,13 @@
 </head>
 
 <body>
-  <noscript>Vuetris requires javascript to be enabled</noscript>
   <div id="app"></div>
+  <noscript>Vuetris requires javascript to be enabled</noscript>
 
-  <script src="./dist/build.js"></script>
   <script>
     (function () {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./dist/sw.js')
+        navigator.serviceWorker.register('./sw.js')
       }
     })()
   </script>

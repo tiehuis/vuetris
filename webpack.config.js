@@ -4,13 +4,13 @@ var webpack = require('webpack')
 var OfflinePlugin = require('offline-plugin')
 var HtmlWebPackPlugin = require('html-webpack-plugin')
 
-PUBLIC_PATH = './dist/'
+PUBLIC_PATH = './public/'
 
 module.exports = {
   entry: path.resolve(__dirname, 'src/index.ts'),
   output: {
-    path: path.resolve(__dirname, './dist'),
-    publicPath: PUBLIC_PATH,
+    path: path.resolve(__dirname, PUBLIC_PATH),
+    publicPath: './',
     filename: 'build.js'
   },
   module: {
@@ -64,8 +64,16 @@ module.exports = {
     hints: false
   },
   plugins: [
+    new HtmlWebPackPlugin({
+      template: './src/index.html'
+    }),
     new OfflinePlugin({
-      external: ['./index.html']
+      responseStrategy: 'network-first',
+      updateStrategy: 'all',
+      ServiceWorker: {
+        minify: true
+      },
+      AppCache: false
     })
   ],
   devtool: '#eval-source-map'
