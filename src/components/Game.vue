@@ -28,13 +28,12 @@ export default Vue.extend({
       this.startTime = new Date();
       this.game.loop();
     },
-    restart() {
-      // TODO: Restart with a non-empty board has soft-drop issues
-      this.game = new Game(Configuration.fromLocalStorage());
-      this.startGame();
-    },
     currentTime() {
       return (this.game.ticks * 16 / 1000).toFixed(2);
+    },
+    restart() {
+      this.game = new Game(Configuration.fromLocalStorage());
+      this.startGame();
     }
   },
   data() {

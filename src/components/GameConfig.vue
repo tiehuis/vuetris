@@ -1,6 +1,7 @@
 <template lang="pug">
-  div#settings
-    fieldset
+  div
+    button(v-on:click='hidden = !hidden') Show Settings
+    fieldset#settings(v-bind:class="{ 'is-hidden': hidden }")
       label(for='das') DAS
       input(v-model='config.das', id='das' type='number')
 
@@ -22,15 +23,17 @@
       label(for='goal') Goal
       input(v-model='config.goal', id='goal', type='number')
 
-      label(for='randomizer') randomizer
+      label(for='randomizer') Randomizer
       select(v-model='config.randomizer', id='randomizer')
         option(value='bag') Bag Randomizer
         option(value='simple') Simple
 
-      label(for='rotater') randomizer
+      label(for='rotater') Rotation System
       select(v-model='config.rotater', id='rotater')
         option(value='srs') SRS
         option(value='simple') Simple
+
+      br
 
       button(v-on:click='saveConfig') Save Settings
       button(v-on:click='clearConfig') Clear Saved Configuration
@@ -43,7 +46,8 @@ import { Configuration } from "../tetris/game";
 export default Vue.extend({
   data() {
     return {
-      config: Configuration.fromLocalStorage()
+      config: Configuration.fromLocalStorage(),
+      hidden: true
     };
   },
   methods: {

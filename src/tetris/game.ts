@@ -1,5 +1,3 @@
-import * as kd from "keydrown"
-
 import { Input, InputExtra, InputState, readInput } from "./input"
 import { BagRandomizer, IRandomizer, SimpleRandomizer } from "./randomizer"
 import { render2d, renderWebGl } from "./render"
