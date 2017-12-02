@@ -3,8 +3,9 @@ import "./style/skeleton.css"
 import "./style/vuetris.css"
 
 import Vue from "vue"
+import ConfigComponent from "./components/Config.vue"
 import GameComponent from "./components/Game.vue"
-import GameConfigComponent from "./components/GameConfig.vue"
+import ReplayComponent from "./components/Replay.vue"
 
 import * as OfflinePluginRuntime from "offline-plugin/runtime"
 OfflinePluginRuntime.install()
@@ -14,16 +15,20 @@ const v = new Vue({
   template: `
     <div class="container">
       <div class="row">
-        <div class="two-thirds column">
+        <div class="six columns">
           <game-component />
         </div>
-        <div class="one-third column">
-          <game-config-component />
+        <div class="three columns">
+          <config-component />
+        </div>
+        <div class="three columns">
+          <replay-component />
         </div>
       </div>
     </div>`,
   components: {
     GameComponent,
-    GameConfigComponent,
+    ConfigComponent,
+    ReplayComponent,
   },
 });

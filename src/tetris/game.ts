@@ -54,17 +54,20 @@ export class Configuration {
     this.gravity = 1000
     this.softDropGravity = 0
     this.goal = 40
-    this.lockTimer = 0
+    this.lockTimer = 500
     this.randomizer = "bag"
     this.rotater = "srs"
   }
 
   static fromLocalStorage(): Configuration {
+    return Configuration.fromString(localStorage.getItem('config') || null)
+  }
+
+  static fromString(data: any): Configuration {
     // We need to append new items to ensure we have the methods associated on
     // the configuration available.
     const cfg: any = new Configuration()
-
-    const saved = JSON.parse(localStorage.saveData || null)
+    const saved = JSON.parse(data)
     if (saved != null) {
       for (const key in saved) {
         if (saved.hasOwnProperty(key)) {
@@ -77,7 +80,11 @@ export class Configuration {
   }
 
   toLocalStorage() {
-    localStorage.saveData = JSON.stringify(this);
+    localStorage.setItem('config', this.toString())
+  }
+
+  toString() {
+    return JSON.stringify(this)
   }
 
   newRandomizer(): IRandomizer {
@@ -106,12 +113,46 @@ export class Statistics {
   linesCleared: number
   /// Number of keypresses
   keysPressed: number
+  /// Total time elapsed
+  timeElapsed: number
 
   constructor() {
     this.blocksPlaced = 0
     this.linesCleared = 0
     this.keysPressed = 0
+    this.timeElapsed = 0
   }
+}
+
+export class ReplayFrame {
+  ticks: number
+  keyState: number
+
+  constructor(ticks: number, keyState: number) {
+    this.ticks = ticks
+    this.keyState = keyState
+  }
+}
+
+export class ReplayBuilder {
+  lastKeyState: number
+  inputs: ReplayFrame[]
+
+  constructor() {
+    this.lastKeyState = -1
+    this.inputs = []
+  }
+
+  addKeyState(ticks: number, keyState: number) {
+    if (keyState === this.lastKeyState) {
+      return
+    }
+
+    this.inputs.push(new ReplayFrame(ticks, keyState))
+    this.lastKeyState = keyState
+  }
+
+  // To export, we need the current configuration and this replay state
 }
 
 export class Piece {
@@ -171,6 +212,9 @@ export class Game {
 
   state: GameState
 
+  // We will not be building a replay if we are in playback
+  replayBuilder: ReplayBuilder | null
+
   rotater: IRotater
 
   piece: Piece | null
@@ -228,6 +272,8 @@ export class Game {
     this.state = GameState.Ready
 
     this.stats = new Statistics()
+
+    this.replayBuilder = new ReplayBuilder()
 
     this.ticks = 0
     this.ticksAll = 0
@@ -407,9 +453,37 @@ export class Game {
     return false
   }
 
+  private saveReplay() {
+    if (this.replayBuilder !== null) {
+      // Compact dictionary into array
+      const inputa = []
+      for (const item of this.replayBuilder.inputs) {
+        inputa.push([item.ticks, item.keyState])
+      }
+
+      this.stats.timeElapsed = (this.ticks * 16 / 1000)
+
+      const replayData = {
+        config: JSON.parse(this.cfg.toString()),
+        date: Date.now(),
+        statistics: JSON.parse(JSON.stringify(this.stats)),
+        inputs: inputa,
+      }
+
+      // We store each replay in their own key slot
+      localStorage.setItem('replay-' + Date.now(),
+        JSON.stringify(replayData))
+    }
+
+  }
+
   private update() {
     let instantFrame = false
     const input = readInput(this)
+
+    if (this.replayBuilder !== null) {
+      this.replayBuilder.addKeyState(this.ticksAll, input.keyState)
+    }
     this.stats.keysPressed += input.newKeysCount
 
     while (true) {
@@ -557,6 +631,7 @@ export class Game {
           {
             // Signal the game has ended, stop updating
             this.finished = true
+            this.saveReplay()
           }
           break
       }
@@ -570,6 +645,7 @@ export class Game {
     }
 
     this.ticks += 1
+    this.ticksAll += 1
   }
 
   private frame() {

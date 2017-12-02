@@ -21,6 +21,8 @@ export class Input {
   extra: InputExtra
   // For KPT calculation
   newKeysCount: number
+  // Raw keystate
+  keyState: number
 
   constructor() {
     this.movement = 0
@@ -28,6 +30,7 @@ export class Input {
     this.gravity = 0
     this.extra = 0
     this.newKeysCount = 0
+    this.keyState = 0
   }
 }
 
@@ -113,11 +116,11 @@ export function readInput(game: Game): Input {
     }
   }
 
-  // TODO: newKeystate calculation here is bad
   const newKeystate = currentKeystate & ~game.input.keystate
   game.input.keystate = currentKeystate
 
   const actions = new Input()
+  actions.keyState = currentKeystate
   actions.newKeysCount = newKeyCount
 
   // How does DAS work?

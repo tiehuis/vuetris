@@ -1,6 +1,6 @@
 <template lang="pug">
   div
-    button(v-on:click='hidden = !hidden') Show Settings
+    button(v-on:click='hidden = !hidden') Settings
     fieldset#settings(v-bind:class="{ 'is-hidden': hidden }")
       label(for='das') DAS
       input(v-model='config.das', id='das' type='number')
@@ -74,7 +74,7 @@ export default Vue.extend({
       config.toLocalStorage();
     },
     clearConfig: function() {
-      localStorage.clear();
+      localStorage.removeItem("config");
     }
   }
 });
