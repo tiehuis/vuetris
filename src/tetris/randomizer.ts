@@ -1,35 +1,82 @@
+import { Piece } from "./game";
 import { Pieces, PieceType } from "./types"
 
-// Return a number between [min, max)
-function randomInt(min: number, max: number): number {
-  const imin = Math.ceil(min)
-  const imax = Math.floor(max)
-  return Math.floor(Math.random() * (imax - imin) + imin)
-}
+class SmallPrng {
+  s: Uint32Array
+  seed: number
 
-function shuffle<T>(a: T[]) {
-  for (let i = a.length - 1; i >= 1; --i) {
-    const j = randomInt(0, i + 1)
-    const tmp = a[j];
-    a[j] = a[i];
-    a[i] = tmp;
+  constructor(seed: number = Math.floor(Math.random() * 0xFFFFFFFF)) {
+    this.reseed(seed)
+  }
+
+  reseed(seed: number) {
+    this.seed = seed
+    this.s = new Uint32Array([0xf1ea5eed, seed, seed, seed])
+
+    for (let i = 0; i < 20; ++i) {
+      this.next()
+    }
+  }
+
+  next(): number {
+    const r = (x: number, n: number) => (x << n) | (x >> (32 - n))
+
+    // Uint32Array's have modulo arithmetic operators
+    const e = this.s[0] - r(this.s[1], 27)
+    this.s[0] = this.s[1] ^ r(this.s[2], 17)
+    this.s[1] = this.s[2] + this.s[3]
+    this.s[2] = this.s[3] + e
+    this.s[3] = e + this.s[0]
+
+    return this.s[3]
+  }
+
+  // Return a number between [min, max)
+  range(min: number, max: number): number {
+    const range = max - min
+    const rem = 0xFFFFFFFF % range
+
+    let x
+    do { x = this.next() } while (x >= 0xFFFFFFFF - rem);
+
+    return min + x % range
+  }
+
+  shuffle<T>(a: T[]) {
+    for (let i = a.length - 1; i >= 1; --i) {
+      const j = this.range(0, i + 1)
+      const tmp = a[j];
+      a[j] = a[i];
+      a[i] = tmp;
+    }
   }
 }
 
-export interface IRandomizer {
-  next(): PieceType
+export abstract class IRandomizer {
+  prng: SmallPrng
+
+  constructor(seed?: number) {
+    if (seed !== undefined) {
+      this.prng = new SmallPrng(seed)
+    } else {
+      this.prng = new SmallPrng()
+    }
+  }
+
+  abstract next(): PieceType
 }
 
-export class SimpleRandomizer implements IRandomizer {
+export class SimpleRandomizer extends IRandomizer {
   next(): PieceType {
-    return Pieces[randomInt(0, Pieces.length)]
+    return Pieces[this.prng.range(0, Pieces.length)]
   }
 }
 
-export class BagRandomizer implements IRandomizer {
+export class BagRandomizer extends IRandomizer {
   bag: number[]
 
-  constructor() {
+  constructor(seed?: number) {
+    super(seed)
     this.bag = []
     this.fillBag()
   }
@@ -46,6 +93,6 @@ export class BagRandomizer implements IRandomizer {
     for (let i = 0; i < 7; ++i) {
       this.bag.push(i)
     }
-    shuffle(this.bag)
+    this.prng.shuffle(this.bag)
   }
 }

@@ -1,4 +1,5 @@
-import { Input, InputExtra, InputState, readInput } from "./input"
+import { Input, InputExtra, InputState } from "./input"
+import { IInputSource, KeyboardSource, ReplaySource } from "./input"
 import { BagRandomizer, IRandomizer, SimpleRandomizer } from "./randomizer"
 import { render2d, renderWebGl } from "./render"
 import { IRotater, SimpleRotater, SRSRotater } from "./rotater"
@@ -87,12 +88,12 @@ export class Configuration {
     return JSON.stringify(this)
   }
 
-  newRandomizer(): IRandomizer {
+  newRandomizer(seed?: number): IRandomizer {
     switch (this.randomizer) {
       case "simple":
-        return new SimpleRandomizer()
+        return new SimpleRandomizer(seed)
       case "bag":
-        return new BagRandomizer()
+        return new BagRandomizer(seed)
     }
   }
 
@@ -124,19 +125,9 @@ export class Statistics {
   }
 }
 
-export class ReplayFrame {
-  ticks: number
-  keyState: number
-
-  constructor(ticks: number, keyState: number) {
-    this.ticks = ticks
-    this.keyState = keyState
-  }
-}
-
 export class ReplayBuilder {
   lastKeyState: number
-  inputs: ReplayFrame[]
+  inputs: number[][]
 
   constructor() {
     this.lastKeyState = -1
@@ -148,7 +139,12 @@ export class ReplayBuilder {
       return
     }
 
-    this.inputs.push(new ReplayFrame(ticks, keyState))
+    // We us an array to compact the replay size. We should compact it further
+    // if we can (integer array compression) since we have a 5Mb limit in
+    // localStorage.
+    //
+    // Can start with a fixed UInt8Array instead and go from there.
+    this.inputs.push([ticks, keyState])
     this.lastKeyState = keyState
   }
 
@@ -210,6 +206,8 @@ export class Game {
   randomizer: IRandomizer
   previewQueue: PieceType[]
 
+  inputSource: IInputSource
+
   state: GameState
 
   // We will not be building a replay if we are in playback
@@ -245,7 +243,10 @@ export class Game {
   // Has the game finished?
   finished: boolean
 
-  constructor(cfg: Configuration = new Configuration()) {
+  constructor(
+    cfg: Configuration = new Configuration(),
+    inputSource: IInputSource = new KeyboardSource()) {
+
     // 2d initialize array
     this.board = new Array(20);
     for (let y = 0; y < 20; ++y) {
@@ -259,6 +260,8 @@ export class Game {
     this.randomizer = this.cfg.newRandomizer()
     this.rotater = this.cfg.newRotater()
 
+    this.inputSource = inputSource
+
     this.previewQueue = []
     this.gravity = this.cfg.gravity
 
@@ -267,6 +270,12 @@ export class Game {
     this.holdAvailable = true
 
     // Pass in the keymap here from the configuration.
+
+    // Replay initialization: We need to copy the configuration as well!
+    // const item = JSON.parse(localStorage.getItem('replay') as string)
+    // this.randomizer = this.cfg.newRandomizer(item.seed)
+    // this.inputSource = new ReplaySource(item.inputs)
+
     this.input = new InputState()
 
     this.state = GameState.Ready
@@ -455,19 +464,14 @@ export class Game {
 
   private saveReplay() {
     if (this.replayBuilder !== null) {
-      // Compact dictionary into array
-      const inputa = []
-      for (const item of this.replayBuilder.inputs) {
-        inputa.push([item.ticks, item.keyState])
-      }
-
       this.stats.timeElapsed = (this.ticks * 16 / 1000)
 
       const replayData = {
         config: JSON.parse(this.cfg.toString()),
         date: Date.now(),
         statistics: JSON.parse(JSON.stringify(this.stats)),
-        inputs: inputa,
+        seed: this.randomizer.prng.seed,
+        inputs: this.replayBuilder.inputs,
       }
 
       // We store each replay in their own key slot
@@ -479,7 +483,7 @@ export class Game {
 
   private update() {
     let instantFrame = false
-    const input = readInput(this)
+    const input = this.inputSource.read(this)
 
     if (this.replayBuilder !== null) {
       this.replayBuilder.addKeyState(this.ticksAll, input.keyState)

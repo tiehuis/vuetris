@@ -2,9 +2,9 @@
   div
     div
       canvas#hold
-      span#spacer
+      span.spacer
       canvas#board
-      span#spacer
+      span.spacer
       canvas#preview
 
     label Cleared: {{ game.stats.linesCleared }}
@@ -51,7 +51,7 @@ export default Vue.extend({
 </script>
 
 <style scoped lang="sass">
-  #spacer
+  .spacer
     padding-right: 10px
 
   #hold
