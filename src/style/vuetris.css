@@ -5,3 +5,25 @@
 .is-hidden {
   display: none
 }
+
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-gap: 10px;
+  grid-auto-rows: minmax(50px, auto);
+}
+
+#field {
+  grid-column: 2 / 4;
+  grid-row: 2;
+}
+
+#config {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+#replay {
+  grid-column: 5;
+  grid-row: 2;
+}

@@ -13,17 +13,15 @@ OfflinePluginRuntime.install()
 const v = new Vue({
   el: "#app",
   template: `
-    <div class="container">
-      <div class="row">
-        <div class="six columns">
-          <game-component />
-        </div>
-        <div class="three columns">
-          <config-component />
-        </div>
-        <div class="three columns">
-          <replay-component />
-        </div>
+    <div class="wrapper">
+      <div id="field">
+        <game-component />
+      </div>
+      <div id="config">
+        <config-component />
+      </div>
+      <div id="replay">
+        <replay-component />
       </div>
     </div>`,
   components: {

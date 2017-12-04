@@ -1,20 +1,19 @@
 <template lang="pug">
-  div
-    div
-      canvas#hold
-      span.spacer
-      canvas#board
-      span.spacer
-      canvas#preview
+  div#field
+    canvas#hold
+    canvas#board
+    canvas#preview
 
-    label Cleared: {{ game.stats.linesCleared }}
-    label Placed: {{ game.stats.blocksPlaced }}
-    label TPS: {{ currentTime() != 0 ? (game.stats.blocksPlaced / currentTime()).toFixed(2) : 0 }}
-    label KPT: {{ game.stats.blocksPlaced != 0 ? (game.stats.keysPressed / game.stats.blocksPlaced).toFixed(2) : 0 }}
-    // Don't update this every frame, save cpu!
-    label Time: {{ currentTime() }}
+    div#settings
+      label Cleared: {{ game.stats.linesCleared }}
+      label Placed: {{ game.stats.blocksPlaced }}
+      label TPS: {{ currentTime() != 0 ? (game.stats.blocksPlaced / currentTime()).toFixed(2) : 0 }}
+      label KPT: {{ game.stats.blocksPlaced != 0 ? (game.stats.keysPressed / game.stats.blocksPlaced).toFixed(2) : 0 }}
+      // Don't update this every frame, save cpu!
+      label Time: {{ currentTime() }}
 
-    button(v-on:click='restart()') Restart
+    div#actions
+      button(v-on:click='restart()') Restart
 </template>
 
 <script lang="ts">
@@ -50,19 +49,33 @@ export default Vue.extend({
 });
 </script>
 
-<style scoped lang="sass">
-  .spacer
-    padding-right: 10px
+<style lang="sass" scoped>
+  #field
+    display: grid
+    grid-tempate-columns: repeat(42, 1fr)
+    grid-row-gap: 10px
+    grid-auto-rows: auto
 
   #hold
-    height: 100px
-    width: 100px
+    // 100x80
+    grid-column: 1 / 10
+    grid-row: 1
 
   #board
-    height: 400px
-    width: 200px
+    // 200x400
+    grid-column: 10 / 30
+    grid-row: 1
 
   #preview
-    height: 400px
-    width: 120px
+    // 120x400
+    grid-column: 30 / 42
+    grid-row: 1
+
+  #settings
+    grid-column: 10
+    grid-row: 2
+
+  #actions
+    grid-column: 30
+    grid-row: 2
 </style>

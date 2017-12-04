@@ -436,25 +436,24 @@ export class Game {
   }
 
   private tryHold(): boolean {
-    const piece = this.piece as Piece
+    if (this.piece === null) {
+      return false
+    }
 
     if (this.holdAvailable) {
       if (this.holdPiece == null) {
-        this.holdPiece = piece.type
+        this.holdPiece = this.piece.type
         this.piece = this.nextPiece()
       } else {
-        piece.x = 5
-        piece.y = 0
-        piece.r = 0
-
         const tmp = this.holdPiece
-        this.holdPiece = piece.type
-        piece.type = tmp
+        this.holdPiece = this.piece.type
+        this.piece.type = tmp
 
-        this.piece = piece
+        this.piece.x = this.rotater.EntryX[this.holdPiece]
+        this.piece.y = 0
+        this.piece.r = this.rotater.EntryTheta[this.holdPiece]
       }
 
-      // TODO: Update hard drop
       this.holdAvailable = false
       return true
     }
@@ -548,7 +547,9 @@ export class Game {
             // after? Possibly make this configurable.
 
             if (input.extra & InputExtra.Hold) {
-              this.tryHold()
+              if (this.tryHold()) {
+                break
+              }
             }
 
             if (input.rotation) {
