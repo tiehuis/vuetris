@@ -635,7 +635,9 @@ export class Game {
           {
             // Signal the game has ended, stop updating
             this.finished = true
-            this.saveReplay()
+            if (this.state === GameState.Win) {
+              this.saveReplay()
+            }
           }
           break
       }
