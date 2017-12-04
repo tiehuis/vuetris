@@ -412,13 +412,18 @@ export class Game {
   }
 
   private lockPiece() {
-    const piece = this.piece as Piece
-    for (const block of PieceOffsets[piece.type][piece.r]) {
-      const x = block[0] + piece.ix
-      const y = block[1] + piece.hardDropY
-
-      this.board[y][x] = PieceMap[piece.type]
+    if (this.piece === null) {
+      throw new Error('cannot lock a null piece')
     }
+
+    for (const block of PieceOffsets[this.piece.type][this.piece.r]) {
+      const x = block[0] + this.piece.ix
+      const y = block[1] + this.piece.hardDropY
+
+      this.board[y][x] = PieceMap[this.piece.type]
+    }
+
+    this.piece = null
   }
 
   private nextPiece(): Piece {
@@ -437,7 +442,7 @@ export class Game {
 
   private tryHold(): boolean {
     if (this.piece === null) {
-      return false
+      throw new Error('cannot hold a null piece')
     }
 
     if (this.holdAvailable) {
@@ -477,7 +482,6 @@ export class Game {
       localStorage.setItem('replay-' + Date.now(),
         JSON.stringify(replayData))
     }
-
   }
 
   private update() {
@@ -518,6 +522,7 @@ export class Game {
         case GameState.NewPiece:
           {
             const piece = this.nextPiece()
+
             if (this.isCollision(piece.type, piece.ix, piece.iy, piece.r)) {
               this.state = GameState.Lockout
             } else {
@@ -530,12 +535,14 @@ export class Game {
         case GameState.Falling:
         case GameState.Locking:
           {
-            const piece = this.piece as Piece
+            if (this.piece == null) {
+              throw new Error('null piece should never occur during falling')
+            }
 
             // We must recheck the lock timer since we may have moved from
             // locking to falling and do not want to lock in mid-air.
             const isLocked = this.state === GameState.Locking &&
-              piece.lockTimer >= this.msToTicks(this.cfg.lockTimer)
+              this.piece.lockTimer >= this.msToTicks(this.cfg.lockTimer)
 
             if ((input.extra & InputExtra.HardDrop) || isLocked) {
               instantFrame = true
@@ -559,9 +566,9 @@ export class Game {
             let distance = input.movement
             if (distance !== 0) {
               while (distance < 0) {
-                if (!this.isCollision(piece.type, piece.ix - 1, piece.iy,
-                  piece.r)) {
-                  piece.x -= 1
+                if (!this.isCollision(this.piece.type, this.piece.ix - 1,
+                  this.piece.iy, this.piece.r)) {
+                  this.piece.x -= 1
                   distance += 1
                 } else {
                   break
@@ -569,9 +576,9 @@ export class Game {
               }
 
               while (distance > 0) {
-                if (!this.isCollision(piece.type, piece.ix + 1, piece.iy,
-                  piece.r)) {
-                  piece.x += 1
+                if (!this.isCollision(this.piece.type, this.piece.ix + 1,
+                  this.piece.iy, this.piece.r)) {
+                  this.piece.x += 1
                   distance -= 1
                 } else {
                   break
@@ -581,15 +588,16 @@ export class Game {
 
             // Compute hard drop and cache, this only changes on an actual
             // movement so we don't need to redo this here.
-            let y = piece.iy
-            while (!this.isCollision(piece.type, piece.ix, y + 1, piece.r)) {
+            let y = this.piece.iy
+            while (!this.isCollision(this.piece.type, this.piece.ix, y + 1,
+              this.piece.r)) {
               y += 1
             }
-            piece.hardDropY = y
+            this.piece.hardDropY = y
 
-            piece.y += input.gravity + this.msPerBlock(this.gravity)
-            if (piece.y > piece.hardDropY) {
-              piece.y = piece.hardDropY
+            this.piece.y += input.gravity + this.msPerBlock(this.gravity)
+            if (this.piece.y > this.piece.hardDropY) {
+              this.piece.y = this.piece.hardDropY
               this.state = GameState.Locking
             } else {
               // Reset lock timer
@@ -599,10 +607,8 @@ export class Game {
             // Check movement and if lock timer should reset if it is allowed
 
             if (this.state === GameState.Locking) {
-              piece.lockTimer += 1
+              this.piece.lockTimer += 1
             }
-
-            this.piece = piece
           }
           break
 
