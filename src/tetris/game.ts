@@ -469,10 +469,13 @@ export class Game {
   private saveReplay() {
     if (this.replayBuilder !== null) {
       this.stats.timeElapsed = (this.ticks * 16 / 1000)
+      const now = Date.now()
 
       const replayData = {
         config: JSON.parse(this.cfg.toString()),
-        date: Date.now(),
+        archived: false,
+        date: now,
+        name: now,
         statistics: JSON.parse(JSON.stringify(this.stats)),
         seed: this.randomizer.prng.seed,
         inputs: this.replayBuilder.inputs,

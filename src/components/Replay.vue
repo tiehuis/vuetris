@@ -7,10 +7,17 @@
           // Link a click event to starting a new replay in the main window
           // Needs to occur at the upper level.
           span {{ replay.name }} @ {{ new Date(replay.date).toLocaleString() }}: {{ replay.statistics.timeElapsed.toFixed(3) }} - {{ replay.statistics.goal }}
+          span(v-if='replay.archived') (Archived)
       label {{ start }} - {{ Math.min(end, replays.length) }} of {{ replays.length }}
 
       button(v-on:click='prevPage()', :disabled='start == 0') Back
       button(v-on:click='nextPage()', :disabled='end >= replays.length') Next
+
+      div
+        br
+        br
+        br
+        button(v-on:click='deleteReplays()') Delete All
 </template>
 
 <script lang="ts">
@@ -41,8 +48,7 @@ export default Vue.extend({
           const item = localStorage.getItem(key);
           if (item !== null) {
             const replay = JSON.parse(item);
-            // TODO: Allow changing key value
-            replay.name = key.substring(7);
+            replay.id = key;
             replays.push(replay);
           }
         }
@@ -62,6 +68,13 @@ export default Vue.extend({
       if (this.start < 0) {
         this.start = 0;
         this.end = pageSize;
+      }
+    },
+    deleteReplays() {
+      for (const replay of this.readOverviews()) {
+        if (!replay.archived) {
+          localStorage.removeItem(replay.id);
+        }
       }
     }
   }
