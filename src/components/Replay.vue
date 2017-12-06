@@ -3,15 +3,17 @@
     button(v-on:click='hidden = !hidden') Replays
     div(v-bind:class="{ 'is-hidden': hidden }")
       ul#replay-list
-        li(v-for='replay in replays.slice(start, end)')
+        li(v-for='replay in this.readOverviews().slice(start, end)')
           // Link a click event to starting a new replay in the main window
           // Needs to occur at the upper level.
           span {{ replay.name }} @ {{ new Date(replay.date).toLocaleString() }}: {{ replay.statistics.timeElapsed.toFixed(3) }} - {{ replay.statistics.goal }}
-          span(v-if='replay.archived') (Archived)
-      label {{ start }} - {{ Math.min(end, replays.length) }} of {{ replays.length }}
+          span(v-on:click='toggleArchive(replay.id)')
+            a(v-if='replay.archived') (Archived)
+            a(v-else) (Not Archived)
+      label {{ start }} - {{ Math.min(end, replays.length) }} of {{ this.readOverviews().length }}
 
       button(v-on:click='prevPage()', :disabled='start == 0') Back
-      button(v-on:click='nextPage()', :disabled='end >= replays.length') Next
+      button(v-on:click='nextPage()', :disabled='end >= this.readOverviews().length') Next
 
       div
         br
@@ -68,6 +70,14 @@ export default Vue.extend({
       if (this.start < 0) {
         this.start = 0;
         this.end = pageSize;
+      }
+    },
+    toggleArchive(key: string) {
+      const item = localStorage.getItem(key);
+      if (item !== null) {
+        const replay = JSON.parse(item);
+        replay.archived = !replay.archived;
+        localStorage.setItem(key, JSON.stringify(replay));
       }
     },
     deleteReplays() {
