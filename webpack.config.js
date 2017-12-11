@@ -4,7 +4,8 @@ var webpack = require('webpack')
 var OfflinePlugin = require('offline-plugin')
 var HtmlWebPackPlugin = require('html-webpack-plugin')
 
-PUBLIC_PATH = './public/'
+// We use docs/ because it will build by default under gh-pages
+PUBLIC_PATH = './docs/'
 
 module.exports = {
   entry: path.resolve(__dirname, 'src/index.ts'),
