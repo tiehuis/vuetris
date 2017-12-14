@@ -225,6 +225,14 @@ export class Game {
   // Output statistics
   stats: Statistics
 
+  // Runtime Statistics
+  rtFpsRender: number
+  rtFpsUpdate: number
+  rtMem: number
+  rtLastTime: number
+  rtFramesRender: number
+  rtFramesUpdate: number
+
   // Current fps. We currently fix this to 60fps but this should be dynamically
   // calculated every frame to match the rate at which requestAnimationFrame
   // runs.
@@ -287,6 +295,16 @@ export class Game {
     this.ticks = 0
     this.ticksAll = 0
     this.fps = 60
+    this.frameStep = 1 / this.fps
+    this.frameLast = timestamp()
+    this.frameDt = 0
+
+    this.rtFpsRender = 0
+    this.rtFpsUpdate = 0
+    this.rtMem = 0
+    this.rtLastTime = timestamp()
+    this.rtFramesUpdate = 0
+    this.rtFramesRender = 0
 
     this.finished = false
 
@@ -500,11 +518,7 @@ export class Game {
       switch (this.state) {
         case GameState.Ready:
           {
-            if (this.ticksAll === 0) {
-              // Emit ready
-            }
-
-            if (this.ticksAll++ >= 50) {
+            if (this.ticksAll++ >= this.msToTicks(833)) {
               this.state = GameState.Go
             }
           }
@@ -512,11 +526,7 @@ export class Game {
 
         case GameState.Go:
           {
-            if (this.ticksAll === 51) {
-              // Emit go
-            }
-
-            if (this.ticksAll++ > 100) {
+            if (this.ticksAll++ >= this.msToTicks(2 * 833)) {
               this.state = GameState.NewPiece
             }
           }
@@ -668,16 +678,28 @@ export class Game {
     const now = timestamp()
     this.frameDt += Math.min(1, (now - this.frameLast) / 1000)
 
-    // TODO: Invalidate replays if too many lag reductions.
-    // Only running once?
-    // while (this.frameDt > this.frameStep) {
-    //     this.frameDt -= this.frameStep;
-    //     this.update()
-    // }
+    while (this.frameDt > this.frameStep) {
+      this.frameDt -= this.frameStep;
+      this.update()
+      this.rtFramesUpdate += 1
+    }
 
-    this.update()
     this.render()
+    this.rtFramesRender += 1
     this.frameLast = now
+
+    const end = timestamp()
+
+    if (end >= this.rtLastTime + 1000) {
+      // Measure sliding window fps/memory
+      this.rtFpsRender = (this.rtFramesRender * 1000) / (end - this.rtLastTime)
+      this.rtFpsUpdate = (this.rtFramesUpdate * 1000) / (end - this.rtLastTime)
+      this.rtMem = 0 // (performance as any).memory.usedJSHeapSize
+
+      this.rtLastTime = end
+      this.rtFramesRender = 0
+      this.rtFramesUpdate = 0
+    }
 
     if (!this.finished) {
       requestAnimationFrame(() => this.frame())

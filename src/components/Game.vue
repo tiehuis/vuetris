@@ -11,6 +11,8 @@
       label KPT: {{ game.stats.blocksPlaced != 0 ? (game.stats.keysPressed / game.stats.blocksPlaced).toFixed(2) : 0 }}
       // Don't update this every frame, save cpu!
       label Time: {{ currentTime() }}
+      label Render FPS: {{ game.rtFpsRender.toFixed(3) }}
+      label Update FPS: {{ game.rtFpsUpdate.toFixed(3) }}
 
     div#actions
       button(v-on:click='restart()') Restart
@@ -28,7 +30,7 @@ export default Vue.extend({
       this.game.loop();
     },
     currentTime() {
-      return (this.game.ticks * 16 / 1000).toFixed(2);
+      return (this.game.ticks * (1000 / this.game.fps) / 1000).toFixed(2);
     },
     restart() {
       this.game = new Game(Configuration.fromLocalStorage());
